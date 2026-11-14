@@ -133,6 +133,27 @@ OPENSEARCH_NODE=https://avnadmin:YOUR_PASSWORD@your-opensearch-service.aivenclou
         </div>
       )}
 
+      {/* Cloud Preview Notification Banner */}
+      {stats?.isCloudPreview && (
+        <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center space-x-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold">Frontend Deployed on Vercel (Cloud Preview):</span>
+              <span className="text-amber-800 ml-1">
+                Items and UI are displaying from resilient fallback. To connect live Aiven PostgreSQL, Kafka, and OpenSearch on Vercel, host your backend on Render and set <code className="bg-white/80 px-1.5 py-0.5 rounded font-mono text-[11px] text-amber-900">VITE_API_URL</code> in Vercel settings.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('aivenGuide')}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shrink-0 text-xs shadow-2xs"
+          >
+            View Setup Guide
+          </button>
+        </div>
+      )}
+
       {/* Real Aiven Service Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         
