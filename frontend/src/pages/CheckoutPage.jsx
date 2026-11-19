@@ -1,20 +1,38 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ShieldCheck, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ShieldCheck, Lock, Loader2, AlertCircle, CheckCircle2, User, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { placeOrder } from '../api/api';
 
-export default function CheckoutPage({ onBackToStore, onOrderSuccess }) {
+export default function CheckoutPage({ onBackToStore, onOrderSuccess, onNavigateToLogin }) {
   const { cartItems, subtotal, tax, shipping, total, clearCart } = useCart();
+  const { user, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
-    customerName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: ''
+    customerName: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    city: user?.city || 'Bengaluru',
+    state: user?.state || 'Karnataka',
+    pincode: user?.pincode || '560038'
   });
+
+  // Pre-fill form details if user logs in or user details are available
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        customerName: prev.customerName || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+        address: prev.address || user.address || '',
+        city: prev.city || user.city || 'Bengaluru',
+        state: prev.state || user.state || 'Karnataka',
+        pincode: prev.pincode || user.pincode || '560038'
+      }));
+    }
+  }, [user]);
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -136,6 +154,45 @@ export default function CheckoutPage({ onBackToStore, onOrderSuccess }) {
                   <div className="font-bold">Order Placement Blocked</div>
                   <div>{errorMessage}</div>
                 </div>
+              </div>
+            )}
+
+            {/* Auth status & Express Checkout Banner */}
+            {isAuthenticated ? (
+              <div className="p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 flex items-center space-x-1">
+                      <span>Express Checkout: {user?.name}</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    </div>
+                    <div className="text-[11px] text-slate-500">{user?.email} • Saved details applied</div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-700 bg-white border border-indigo-200 px-2.5 py-1 rounded-full shrink-0">
+                  Auto-filled
+                </span>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <User className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span className="text-xs text-slate-600">
+                    Already have an account? <span className="font-semibold text-slate-800">Sign in</span> to load your saved delivery address.
+                  </span>
+                </div>
+                {onNavigateToLogin && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToLogin}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-indigo-300 px-3 py-1 rounded-xl shadow-2xs transition-all shrink-0 ml-2"
+                  >
+                    Sign In
+                  </button>
+                )}
               </div>
             )}
 

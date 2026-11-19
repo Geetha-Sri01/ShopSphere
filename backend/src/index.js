@@ -9,6 +9,7 @@ const searchRoutes = require('./routes/searchRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const authRoutes = require('./routes/authRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const { initProducer } = require('./services/kafkaProducer');
@@ -29,6 +30,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/orders', orderRoutes);
@@ -47,6 +49,7 @@ app.get('/', (req, res) => {
       search: 'Aiven OpenSearch'
     },
     endpoints: {
+      auth: '/api/auth/login',
       products: '/api/products',
       categories: '/api/products/categories',
       search: '/api/search?q=query',

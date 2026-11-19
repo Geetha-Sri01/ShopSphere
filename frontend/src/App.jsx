@@ -7,11 +7,14 @@ import HomePage from './pages/HomePage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import AdminDashboard from './pages/AdminDashboard';
+import LoginPage from './pages/LoginPage';
 import { CartProvider, useCart } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'checkout' | 'order_success' | 'admin'
+  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'checkout' | 'order_success' | 'admin' | 'login'
+  const [loginRedirect, setLoginRedirect] = useState('home');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [lastPlacedOrder, setLastPlacedOrder] = useState(null);
   const { toastMessage } = useCart();
@@ -19,6 +22,13 @@ function AppContent() {
   const handleOrderSuccess = (order) => {
     setLastPlacedOrder(order);
     setCurrentPage('order_success');
+  };
+
+  const handleNavigate = (page) => {
+    if (page === 'login') {
+      setLoginRedirect('home');
+    }
+    setCurrentPage(page);
   };
 
   return (
@@ -51,7 +61,7 @@ function AppContent() {
         onOpenSearch={() => setIsSearchOpen(true)}
         activeTab={currentPage}
         setActiveTab={setCurrentPage}
-        onNavigate={(page) => setCurrentPage(page)}
+        onNavigate={handleNavigate}
       />
 
       {/* Main Page Body */}
@@ -60,10 +70,24 @@ function AppContent() {
           <HomePage onOpenSearch={() => setIsSearchOpen(true)} />
         )}
 
+        {currentPage === 'login' && (
+          <LoginPage
+            onBackToStore={() => setCurrentPage(loginRedirect || 'home')}
+            onLoginSuccess={(user, target) => {
+              setCurrentPage(target || loginRedirect || 'home');
+            }}
+            redirectAfter={loginRedirect}
+          />
+        )}
+
         {currentPage === 'checkout' && (
           <CheckoutPage
             onBackToStore={() => setCurrentPage('home')}
             onOrderSuccess={handleOrderSuccess}
+            onNavigateToLogin={() => {
+              setLoginRedirect('checkout');
+              setCurrentPage('login');
+            }}
           />
         )}
 
@@ -108,8 +132,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <CartProvider>
-      <AppContent />
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </AuthProvider>
   );
 }

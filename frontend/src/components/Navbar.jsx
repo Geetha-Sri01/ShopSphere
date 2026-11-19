@@ -1,10 +1,53 @@
-import React, { useState } from 'react';
-import { ShoppingBag, ShoppingCart, Search, Menu, X, Activity, Sparkles, ShieldCheck } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  ShoppingBag, 
+  ShoppingCart, 
+  Search, 
+  Menu, 
+  X, 
+  Activity, 
+  Sparkles, 
+  ShieldCheck, 
+  User, 
+  LogOut, 
+  ChevronDown, 
+  CheckCircle2, 
+  MapPin, 
+  Shield 
+} from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ onOpenSearch, activeTab, setActiveTab, onNavigate }) {
   const { itemCount, setIsCartOpen } = useCart();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setUserDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSignOut = () => {
+    logout();
+    setUserDropdownOpen(false);
+    setActiveTab('home');
+    onNavigate?.('home');
+  };
+
+  const getFirstName = (fullName) => {
+    if (!fullName) return 'User';
+    return fullName.trim().split(' ')[0];
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
@@ -55,7 +98,7 @@ export default function Navbar({ onOpenSearch, activeTab, setActiveTab, onNaviga
           </div>
 
           {/* Quick Search Trigger Bar */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+          <div className="hidden md:flex flex-1 max-w-lg mx-6 lg:mx-8">
             <button
               onClick={onOpenSearch}
               className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 hover:border-indigo-300 rounded-full text-slate-500 text-sm transition-all duration-150 shadow-inner group"
@@ -73,11 +116,12 @@ export default function Navbar({ onOpenSearch, activeTab, setActiveTab, onNaviga
           </div>
 
           {/* Right Navigation & Actions */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            {/* Demo Dashboard Button */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            
+            {/* Admin & Telemetry Dashboard Button */}
             <button
               onClick={() => { setActiveTab('admin'); onNavigate?.('admin'); }}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'admin'
                   ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-300'
                   : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
@@ -95,6 +139,107 @@ export default function Navbar({ onOpenSearch, activeTab, setActiveTab, onNaviga
             >
               <Search className="w-5 h-5" />
             </button>
+
+            {/* Authentication / User Profile Button & Dropdown */}
+            {isAuthenticated ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className={`flex items-center space-x-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                    userDropdownOpen
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-900'
+                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-[11px] font-bold">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <span className="hidden sm:inline max-w-[85px] truncate">
+                    {getFirstName(user?.name)}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-fadeIn">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {user?.name}
+                        </p>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          isAdmin 
+                            ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        }`}>
+                          {isAdmin ? 'Admin' : 'Customer'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {user?.email}
+                      </p>
+                      {user?.city && (
+                        <p className="text-[11px] text-slate-400 mt-1 flex items-center space-x-1">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          <span>{user.city}, {user.state}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="py-1">
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setActiveTab('admin');
+                            onNavigate?.('admin');
+                            setUserDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center space-x-2"
+                        >
+                          <Shield className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Admin & Telemetry Dashboard</span>
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          setActiveTab('home');
+                          onNavigate?.('home');
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center space-x-2"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Explore Catalogue</span>
+                      </button>
+                    </div>
+
+                    <div className="pt-1 border-t border-slate-100">
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center space-x-2 font-medium"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => { setActiveTab('login'); onNavigate?.('login'); }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'login'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-600 border border-slate-200'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
 
             {/* Shopping Cart Button */}
             <button
@@ -124,17 +269,38 @@ export default function Navbar({ onOpenSearch, activeTab, setActiveTab, onNaviga
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-slate-100 space-y-2">
             <button
-              onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }}
+              onClick={() => { setActiveTab('home'); onNavigate?.('home'); setMobileMenuOpen(false); }}
               className="block w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-md"
             >
               Home & Storefront
             </button>
             <button
-              onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }}
+              onClick={() => { setActiveTab('admin'); onNavigate?.('admin'); setMobileMenuOpen(false); }}
               className="block w-full text-left px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-md"
             >
               Admin & Aiven Telemetry Dashboard
             </button>
+            {isAuthenticated ? (
+              <div className="pt-2 border-t border-slate-100 px-3">
+                <div className="text-xs text-slate-500 mb-2">
+                  Signed in as <span className="font-bold text-slate-800">{user?.name}</span> ({user?.email})
+                </div>
+                <button
+                  onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
+                  className="w-full text-left py-1.5 text-xs font-semibold text-rose-600 flex items-center space-x-1.5"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setActiveTab('login'); onNavigate?.('login'); setMobileMenuOpen(false); }}
+                className="block w-full text-left px-3 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 rounded-md"
+              >
+                Sign In / Register
+              </button>
+            )}
           </div>
         )}
       </div>

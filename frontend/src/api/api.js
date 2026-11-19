@@ -336,3 +336,104 @@ export async function triggerResetData() {
     return { success: true, message: 'Demo data refreshed!' };
   }
 }
+
+// ==========================================
+// Authentication APIs (Aiven PG + Resilient Fallback)
+// ==========================================
+
+export async function loginUser({ email, password }) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    return await handleResponse(res);
+  } catch (err) {
+    console.warn('API loginUser failed, checking demo fallback accounts:', err.message);
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    
+    if (normalizedEmail === 'aarav@example.in' && password === 'password123') {
+      return {
+        success: true,
+        token: 'demo_token_aarav_' + Date.now(),
+        user: {
+          id: 1,
+          name: 'Aarav Sharma',
+          email: 'aarav@example.in',
+          phone: '+91 98765 43210',
+          address: 'Flat 402, Lotus Greens, Indiranagar',
+          city: 'Bengaluru',
+          state: 'Karnataka',
+          pincode: '560038',
+          role: 'customer'
+        }
+      };
+    }
+    
+    if (normalizedEmail === 'admin@shopsphere.in' && password === 'admin123') {
+      return {
+        success: true,
+        token: 'demo_token_admin_' + Date.now(),
+        user: {
+          id: 999,
+          name: 'ShopSphere Administrator',
+          email: 'admin@shopsphere.in',
+          phone: '+91 99999 11111',
+          address: 'ShopSphere HQ, Cyber Gateway',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          pincode: '500081',
+          role: 'admin'
+        }
+      };
+    }
+    
+    throw err;
+  }
+}
+
+export async function registerUser(userData) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    return await handleResponse(res);
+  } catch (err) {
+    // If it's a server validation error (e.g. 400 user exists), throw it
+    if (err.message && (err.message.includes('already exists') || err.message.includes('required'))) {
+      throw err;
+    }
+    console.warn('API registerUser unreachable, providing fallback registration:', err.message);
+    return {
+      success: true,
+      token: 'demo_reg_token_' + Date.now(),
+      user: {
+        id: Math.floor(Math.random() * 800) + 100,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone || '+91 98765 43210',
+        address: userData.address || '',
+        city: userData.city || 'Bengaluru',
+        state: userData.state || 'Karnataka',
+        pincode: userData.pincode || '560001',
+        role: 'customer'
+      }
+    };
+  }
+}
+
+export async function fetchUserProfile(token) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return await handleResponse(res);
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
